@@ -37,17 +37,19 @@ transformer_tokenizer = None
 torch_module = None
 if os.path.isdir(TRANSFORMER_MODEL_PATH):
     try:
-        import torch as torch_module
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer
-        transformer_tokenizer = AutoTokenizer.from_pretrained(TRANSFORMER_MODEL_PATH)
-        transformer_classifier = AutoModelForSequenceClassification.from_pretrained(
-            TRANSFORMER_MODEL_PATH
-        )
-        transformer_classifier.eval()
-        if getattr(transformer_classifier.config, "num_labels", 2) == 3:
-            print("Three-class DistilBERT Transformer loaded for live predictions.")
+        with open(os.path.join(TRANSFORMER_MODEL_PATH, "config.json"), encoding="utf-8") as config_file:
+            transformer_config = json.load(config_file)
+        if int(transformer_config.get("num_labels", 2)) != 3:
+            print("Legacy two-class Transformer skipped; live predictions use the three-class TF-IDF model.")
         else:
-            print("Legacy two-class Transformer loaded but withheld; live predictions use the three-class TF-IDF model.")
+            import torch as torch_module
+            from transformers import AutoModelForSequenceClassification, AutoTokenizer
+            transformer_tokenizer = AutoTokenizer.from_pretrained(TRANSFORMER_MODEL_PATH)
+            transformer_classifier = AutoModelForSequenceClassification.from_pretrained(
+                TRANSFORMER_MODEL_PATH
+            )
+            transformer_classifier.eval()
+            print("Three-class DistilBERT Transformer loaded for live predictions.")
     except Exception as exc:
         transformer_classifier = None
         transformer_tokenizer = None

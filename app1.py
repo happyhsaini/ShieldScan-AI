@@ -28,6 +28,6 @@ if not os.path.isfile(MODEL_PATH) or not os.path.isfile(VECTORIZER_PATH):
 from src.app import app
 
 if __name__ == "__main__":
-    print("\n✅ Model files found.")
+    print("\n[OK] Model files found.")
     port = int(os.environ.get("PORT", 5500))
     app.run(host="0.0.0.0", port=port, debug=False)

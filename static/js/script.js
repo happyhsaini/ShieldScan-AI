@@ -1045,7 +1045,11 @@ async function apiFetch(url, options = {}) {
   try {
     data = text ? JSON.parse(text) : {};
   } catch (error) {
-    throw new Error("Server returned an unexpected response.");
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType.includes("text/html") || /<!doctype html|<html/i.test(text)) {
+      throw new Error(`The server returned a web page instead of API data (HTTP ${response.status}). Start the Flask app with python app1.py; VS Code Go Live does not run the OCR API.`);
+    }
+    throw new Error(`The server returned invalid data (HTTP ${response.status}).`);
   }
 
   if (!response.ok || data.error) {
