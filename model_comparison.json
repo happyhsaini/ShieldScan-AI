@@ -1,0 +1,46 @@
+{
+  "model": "TF-IDF + Logistic Regression (active three-class model)",
+  "source_archive": "training_data/archive_spam.zip",
+  "threat_score_bands": {
+    "score_formula": "Fake + 0.89 * Suspicious",
+    "Real": "0-<85%",
+    "Suspicious": "85-<95%",
+    "Fake": "95-100%"
+  },
+  "epochs": 0,
+  "split": "stratified 80/20 holdout",
+  "random_state": 42,
+  "train_samples": 4252,
+  "test_samples": 1063,
+  "accuracy_pct": 91.06,
+  "evaluation_policy": "Threat score = Fake + 0.89 * Suspicious; Suspicious-led outputs are capped below 95%; score >=95% is Fake, 85-<95% Suspicious, below 85% Real.",
+  "classes": [
+    "Real",
+    "Suspicious",
+    "Fake"
+  ],
+  "class_distribution": {
+    "Real": 4527,
+    "Fake": 657,
+    "Suspicious": 131
+  },
+  "class_metrics": {
+    "Real": {
+      "precision": 95.46,
+      "recall": 99.78,
+      "f1-score": 97.57
+    },
+    "Suspicious": {
+      "precision": 16.13,
+      "recall": 38.46,
+      "f1-score": 22.73
+    },
+    "Fake": {
+      "precision": 100.0,
+      "recall": 41.22,
+      "f1-score": 58.38
+    }
+  },
+  "transformer_status": "Previous checkpoint remains binary and is not used for live predictions until three-class fine-tuning completes.",
+  "evaluated_at": "2026-11-01T09:51:58.814560+00:00"
+}

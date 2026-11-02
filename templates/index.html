@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShieldScan Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='risk-bands-95-20261101') }}">
+</head>
+<body>
+<div class="ambient-vfx" aria-hidden="true"><span></span><span></span><span></span><div class="central-glow"></div><canvas id="vfx-canvas"></canvas></div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <div class="brand-mark">
+        <span class="brand-ring"></span>
+        <span class="brand-ring brand-ring-alt"></span>
+      </div>
+      <div>
+        <p class="eyebrow">ShieldScan AI</p>
+        <h1 class="brand-title">Command Center</h1>
+      </div>
+    </div>
+
+    <div class="sidebar-copy">
+      <p>Inspect suspicious messages, screenshots, inbox traffic, and model health from a single security console.</p>
+    </div>
+
+    <nav class="nav-links">
+      <button class="nav-btn active" data-tab="analyze">
+        <span class="nav-index">01</span>
+        <span class="nav-copy-block">
+          <strong>Analyze</strong>
+          <small>Classify text instantly</small>
+        </span>
+      </button>
+      <button class="nav-btn" data-tab="image">
+        <span class="nav-index">02</span>
+        <span class="nav-copy-block">
+          <strong>Image OCR</strong>
+          <small>Scan screenshots</small>
+        </span>
+      </button>
+      <button class="nav-btn" data-tab="dashboard">
+        <span class="nav-index">03</span>
+        <span class="nav-copy-block">
+          <strong>Dashboard</strong>
+          <small>Track threat patterns</small>
+        </span>
+      </button>
+      <button class="nav-btn" data-tab="gmail">
+        <span class="nav-index">04</span>
+        <span class="nav-copy-block">
+          <strong>Gmail</strong>
+          <small>Review inbox risk</small>
+        </span>
+      </button>
+      <button class="nav-btn" data-tab="train">
+        <span class="nav-index">05</span>
+        <span class="nav-copy-block">
+          <strong>Retrain</strong>
+          <small>Refresh the model</small>
+        </span>
+      </button>
+      <button class="nav-btn" data-tab="howto">
+        <span class="nav-index">06</span>
+        <span class="nav-copy-block">
+          <strong>How To Use</strong>
+          <small>Learn the workflow</small>
+        </span>
+      </button>
+    </nav>
+
+    <div class="sidebar-panel">
+      <p class="panel-kicker">Model Signal</p>
+      <strong id="navModelBadge">Loading model telemetry...</strong>
+      <p>Live status updates after retraining complete.</p>
+    </div>
+
+    <div class="sidebar-panel compact-panel">
+      <p class="panel-kicker">Mission Profile</p>
+      <ul class="mini-list">
+        <li>Offline Flask deployment</li>
+        <li>Session analytics dashboard</li>
+        <li>OCR and Gmail scanning</li>
+      </ul>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="mobile-topbar">
+      <div>
+        <p class="eyebrow">ShieldScan AI</p>
+        <h2>Threat Review Console</h2>
+      </div>
+      <div class="topbar-status" id="footerModel">Loading...</div>
+    </header>
+
+    <main class="content-main">
+      <section id="tab-analyze" class="tab-section active">
+        <div class="section-hero">
+          <div>
+            <p class="eyebrow">Primary Inspection</p>
+            <h2>Message threat analysis with clearer signals and stronger triage cues.</h2>
+            <p class="section-copy">Paste any text from SMS, email, WhatsApp, or social media and review label, confidence, keyword signals, and recent session activity in one place.</p>
+          </div>
+          <div class="hero-metrics">
+            <div class="hero-chip">
+              <span>Mode</span>
+              <strong>Live text scan</strong>
+            </div>
+            <div class="hero-chip">
+              <span>Shortcut</span>
+              <strong>Ctrl + Enter</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <button class="quick-card sample-card" data-sample-message="Congratulations! You have won a cash prize. Click this link now to claim your reward.">
+            <span class="quick-label">Suspicious sample</span>
+            <strong>Prize scam</strong>
+            <small>Load a classic phishing pattern</small>
+          </button>
+          <button class="quick-card sample-card" data-sample-message="Hi team, please find the meeting schedule attached for tomorrow morning.">
+            <span class="quick-label">Normal sample</span>
+            <strong>Office message</strong>
+            <small>Load a safer business example</small>
+          </button>
+          <div class="quick-card">
+            <span class="quick-label">Operational advice</span>
+            <strong>Look for pressure and urgency</strong>
+            <small>Threatening tone, gift claims, account warnings, and money promises are common risk markers.</small>
+          </div>
+        </div>
+
+        <div id="analysisAlert" class="alert hidden"></div>
+
+        <div class="workspace-grid">
+          <article class="glass-card editor-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Input Console</p>
+                <h3>Paste suspicious message text</h3>
+              </div>
+              <span class="status-pill neutral">Awaiting input</span>
+            </div>
+            <textarea id="msgInput" rows="10" placeholder="Paste a message here to inspect wording, urgency, prize offers, account alerts, or suspicious requests."></textarea>
+            <div class="action-row">
+              <button class="btn btn-primary" id="analyzeBtn">Analyze Message</button>
+              <button class="btn btn-secondary" id="clearAnalyzeBtn">Clear</button>
+            </div>
+          </article>
+
+          <article class="glass-card result-panel">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Detection Output</p>
+                <h3>Threat score, explanation, and human review guidance</h3>
+              </div>
+            </div>
+
+            <div id="resultPlaceholder" class="result-placeholder">
+              <div class="placeholder-grid">
+                <div class="placeholder-node"></div>
+                <div class="placeholder-node"></div>
+                <div class="placeholder-node"></div>
+              </div>
+              <p>Run a scan to populate the threat summary, confidence bars, and review tips.</p>
+            </div>
+
+            <div id="resultCard" class="result-card hidden">
+              <div class="result-badge-wrap">
+                <span id="resultBadge" class="result-badge"></span>
+                <span id="resultConf" class="result-conf"></span>
+              </div>
+
+              <div class="prob-bars">
+                <div class="prob-row">
+                  <span class="prob-lbl">Legitimate</span>
+                  <div class="prob-track"><div class="prob-fill real-fill" id="realBar"></div></div>
+                  <span class="prob-num" id="realNum"></span>
+                </div>
+                <div class="prob-row">
+                  <span class="prob-lbl">Suspicious</span>
+                  <div class="prob-track"><div class="prob-fill suspicious-fill" id="suspiciousBar"></div></div>
+                  <span class="prob-num" id="suspiciousNum"></span>
+                </div>
+                <div class="prob-row">
+                  <span class="prob-lbl">Fake</span>
+                  <div class="prob-track"><div class="prob-fill fake-fill" id="fakeBar"></div></div>
+                  <span class="prob-num" id="fakeNum"></span>
+                </div>
+              </div>
+
+              <div class="result-story">
+                <div class="story-block">
+                  <p class="story-label">Reason</p>
+                  <p id="explainReason" class="story-copy"></p>
+                </div>
+                <div class="story-block">
+                  <p class="story-label">Signals</p>
+                  <div id="signalChips" class="signal-chips"></div>
+                </div>
+                <div class="story-block">
+                  <p class="story-label">Operator Tip</p>
+                  <p id="explainTip" class="story-copy note-copy"></p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article class="glass-card">
+          <div class="card-head split-head">
+            <div>
+              <p class="panel-kicker">Session Activity</p>
+              <h3>Recent checks and export controls</h3>
+            </div>
+            <div class="action-row compact-row">
+              <button class="btn btn-secondary" id="downloadAllBtn">All CSV</button>
+              <button class="btn btn-secondary" id="downloadFakeBtn">Fake Only</button>
+              <button class="btn btn-secondary" id="downloadRealBtn">Real Only</button>
+              <button class="btn btn-ghost" id="clearHistoryBtn">Clear History</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Message Preview</th>
+                  <th>Label</th>
+                  <th>Fake-risk score</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="historyBody">
+                <tr><td colspan="5" class="empty-row">No checks yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="tab-image" class="tab-section">
+        <div class="section-hero">
+          <div>
+            <p class="eyebrow">Visual Capture</p>
+            <h2>Extract screenshot text and pass it through the same detection pipeline.</h2>
+            <p class="section-copy">Upload a screenshot from any messaging platform. OCR text is surfaced first, then the classifier provides confidence and review guidance.</p>
+          </div>
+          <div class="hero-metrics">
+            <div class="hero-chip">
+              <span>Input</span>
+              <strong>PNG / JPG / WEBP</strong>
+            </div>
+            <div class="hero-chip">
+              <span>Flow</span>
+              <strong>OCR then classify</strong>
+            </div>
+          </div>
+        </div>
+
+        <div id="ocrAlert" class="alert hidden"></div>
+
+        <div class="workspace-grid">
+          <article class="glass-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Upload Bay</p>
+                <h3>Drop a suspicious screenshot here</h3>
+              </div>
+            </div>
+            <button class="drop-zone" id="dropZone" type="button">
+              <span class="drop-title">Choose or drop an image</span>
+              <span class="drop-copy">PNG, JPG, JPEG, or WEBP. Larger and clearer screenshots improve OCR quality.</span>
+              <div id="imgPreviewWrap" class="preview-wrap hidden">
+                <img id="imgPreview" src="" alt="Selected preview">
+              </div>
+            </button>
+            <input type="file" id="imgInput" accept="image/*" hidden>
+            <div class="action-row">
+              <button class="btn btn-primary" id="ocrBtn" disabled>Extract and Analyze</button>
+              <button class="btn btn-secondary" id="clearImageBtn">Clear</button>
+            </div>
+          </article>
+
+          <article class="glass-card result-panel">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">OCR Output</p>
+                <h3>Extracted text and result panel</h3>
+              </div>
+            </div>
+
+            <div id="ocrPlaceholder" class="result-placeholder">
+              <div class="placeholder-grid">
+                <div class="placeholder-node"></div>
+                <div class="placeholder-node"></div>
+                <div class="placeholder-node"></div>
+              </div>
+              <p>Upload a screenshot to inspect extracted text, label, and operator notes.</p>
+            </div>
+
+            <div id="ocrResultWrap" class="hidden">
+              <div class="transcript-card">
+                <p class="story-label">Extracted Text</p>
+                <p id="extractedText" class="transcript-copy"></p>
+              </div>
+
+              <div id="ocrResultCard" class="result-card">
+                <div class="result-badge-wrap">
+                  <span id="ocrBadge" class="result-badge"></span>
+                  <span id="ocrConf" class="result-conf"></span>
+                </div>
+                <div class="result-story">
+                  <div class="story-block">
+                    <p class="story-label">Reason</p>
+                    <p id="ocrReason" class="story-copy"></p>
+                  </div>
+                  <div class="story-block">
+                    <p class="story-label">Operator Tip</p>
+                    <p id="ocrTip" class="story-copy note-copy"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-dashboard" class="tab-section">
+        <div class="section-hero">
+          <div>
+            <p class="eyebrow">Threat Dashboard</p>
+            <h2>Session-wide analytics with readable empty states, charts, and live activity.</h2>
+            <p class="section-copy">Track label distribution, model performance, confidence ranges, and the last predictions without the dashboard collapsing into empty panels.</p>
+          </div>
+          <div class="hero-metrics">
+            <div class="hero-chip">
+              <span>Coverage</span>
+              <strong id="dCoverage">0 session checks</strong>
+            </div>
+            <div class="hero-chip">
+              <span>Risk Pulse</span>
+              <strong id="dRisk">No data yet</strong>
+            </div>
+          </div>
+        </div>
+
+        <div id="dashboardAlert" class="alert hidden"></div>
+
+        <div class="metrics-grid">
+          <article class="metric-card">
+            <span>Total Checked</span>
+            <strong id="dTotal">0</strong>
+            <small>Messages processed this session</small>
+          </article>
+          <article class="metric-card danger-card">
+            <span>Fake</span>
+            <strong id="dFake">0</strong>
+            <small>High-risk detections</small>
+          </article>
+          <article class="metric-card warn-card">
+            <span>Suspicious</span>
+            <strong id="dSusp">0</strong>
+            <small>Needs manual review</small>
+          </article>
+          <article class="metric-card success-card">
+            <span>Real</span>
+            <strong id="dReal">0</strong>
+            <small>Lower-risk detections</small>
+          </article>
+          <article class="metric-card">
+            <span>Model Accuracy</span>
+            <strong id="dAcc">--</strong>
+            <small>Loaded from model info</small>
+          </article>
+          <article class="metric-card">
+            <span>Training Samples</span>
+            <strong id="dSamples">--</strong>
+            <small>Dataset size in metadata</small>
+          </article>
+        </div>
+
+        <article class="glass-card architecture-card">
+          <div class="card-head">
+            <div>
+              <p class="panel-kicker">How the classifier works</p>
+              <h3>Message → model → risk probabilities</h3>
+            </div>
+            <span class="comparison-status">Encoder-only: DistilBERT</span>
+          </div>
+          <p class="section-copy">This project classifies messages into Real, Suspicious, and Fake. The current live detector is the retrained three-class TF-IDF model; the old two-class Transformer stays disabled until its three-class retraining finishes.</p>
+          <div class="architecture-legend">
+            <span class="legend-transformer">Transformer path</span>
+            <span class="legend-tfidf">TF-IDF baseline path</span>
+          </div>
+          <div class="architecture-flow" aria-label="Transformer and TF-IDF message classification paths">
+            <div class="arch-input">
+              <span class="arch-step">INPUT</span>
+              <strong>Message text</strong>
+              <small id="archSampleText">Enter a message below to compare both paths.</small>
+            </div>
+            <div class="arch-branches">
+              <div class="arch-branch transformer-branch">
+                <span class="arch-step">TRANSFORMER · ENCODER</span>
+                <div class="arch-node-row">
+                  <div class="arch-node">Tokenizer<span>token IDs</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node">Token + position embeddings<span>word order is retained</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node attention-node">Multi-head self-attention<span>context across the message</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node">Feed-forward + norm<span>encoder layers</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node output-node">Classification head<span>Real / Fake logits</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node probability-node">Softmax<span>probabilities</span></div>
+                </div>
+                <div class="arch-output-row">
+                  <span>Real <strong id="archTransformerReal">--</strong></span>
+                  <span>Suspicious <strong id="archTransformerSuspicious">--</strong></span>
+                  <span>Fake <strong id="archTransformerFake">--</strong></span>
+                  <span>Prediction <strong id="archTransformerLabel">--</strong></span>
+                </div>
+              </div>
+              <div class="arch-branch tfidf-branch">
+                <span class="arch-step">BASELINE · TF-IDF</span>
+                <div class="arch-node-row">
+                  <div class="arch-node">Word / n-gram counts<span>unigrams + bigrams</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node">TF-IDF weights<span>importance in corpus</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node">Logistic Regression<span>linear classifier</span></div>
+                  <b class="arch-arrow">→</b>
+                  <div class="arch-node probability-node">Class probabilities<span>Real / Fake</span></div>
+                </div>
+                <div class="arch-output-row">
+                  <span>Real <strong id="archTfidfReal">--</strong></span>
+                  <span>Suspicious <strong id="archTfidfSuspicious">--</strong></span>
+                  <span>Fake <strong id="archTfidfFake">--</strong></span>
+                  <span>Prediction <strong id="archTfidfLabel">--</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="architecture-compare-controls">
+            <label class="sr-only" for="architectureInput">Message to compare</label>
+            <textarea id="architectureInput" rows="3" placeholder="Type a suspicious message and run both models on the same input..."></textarea>
+            <button class="btn btn-primary" id="compareModelsBtn">Score message</button>
+            <span id="compareModelStatus" role="status">Uncertain messages should be reviewed as Suspicious.</span>
+          </div>
+          <p class="comparison-note">Percentages are each model’s raw probability scores, not calibrated confidence. Threat score combines Fake + 89% of Suspicious probability: Real below 85%, Suspicious from 85% to below 95%, Suspicious-led scores stay below 95%; 95% or higher is Fake.</p>
+        </article>
+
+        <div class="dashboard-grid dashboard-grid-wide">
+          <article class="glass-card comparison-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Same held-out test set</p>
+                <h3>Three-class model evaluation</h3>
+              </div>
+              <span class="comparison-status" id="comparisonStatus">Not measured</span>
+            </div>
+            <p class="section-copy">Held-out evaluation for Real, Suspicious, and Fake predictions. Transformer results appear after a compatible three-class checkpoint is trained.</p>
+            <p class="comparison-note">Currently serving: <strong id="activeModelName">TF-IDF + Logistic Regression</strong></p>
+            <div class="comparison-values">
+              <div class="comparison-value">
+                <span>TF-IDF + Logistic Regression</span>
+                <strong id="comparisonTfidf">--</strong>
+                <small>Held-out accuracy</small>
+              </div>
+              <div class="comparison-value transformer-value">
+                <span>DistilBERT Transformer</span>
+                <strong id="comparisonTransformer">--</strong>
+                <small>Awaiting three-class fine-tuning</small>
+              </div>
+              <div class="comparison-value">
+                <span>Accuracy change</span>
+                <strong class="comparison-delta" id="comparisonDelta">--</strong>
+                <small>Shown when both models are retrained</small>
+              </div>
+            </div>
+            <p class="comparison-note" id="comparisonNote">Run <code>python train_transformer.py</code> to fine-tune DistilBERT and populate this comparison.</p>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="glass-card chart-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Distribution</p>
+                <h3>Fake vs suspicious vs real</h3>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="pieChart"></canvas>
+              <div id="pieChartState" class="chart-state">Run a message or OCR scan to see label distribution.</div>
+            </div>
+          </article>
+
+          <article class="glass-card chart-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Threat Score Bands</p>
+                <h3>Threat probability spread</h3>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="barChart"></canvas>
+              <div id="barChartState" class="chart-state">Bucket counts will appear after predictions are recorded.</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="dashboard-grid dashboard-grid-wide">
+          <article class="glass-card chart-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Timeline</p>
+                <h3>Last 10 fake-probability readings</h3>
+              </div>
+            </div>
+            <div class="chart-wrap line-wrap">
+              <canvas id="lineChart"></canvas>
+              <div id="lineChartState" class="chart-state">Timeline appears once the session has recorded predictions.</div>
+            </div>
+          </article>
+
+          <article class="glass-card activity-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Activity Feed</p>
+                <h3>Recent detection log</h3>
+              </div>
+            </div>
+            <div id="dashboardActivity" class="activity-feed">
+              <div class="activity-empty">No prediction activity yet. Analyze text or screenshots to populate the feed.</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-secondary" id="dashboardDownloadAllBtn">Download All CSV</button>
+          <button class="btn btn-secondary" id="dashboardDownloadFakeBtn">Download Fake CSV</button>
+          <button class="btn btn-secondary" id="dashboardDownloadRealBtn">Download Real CSV</button>
+        </div>
+      </section>
+
+      <section id="tab-gmail" class="tab-section">
+        <div class="section-hero">
+          <div>
+            <p class="eyebrow">Inbox Monitoring</p>
+            <h2>Scan recent Gmail messages inside the same command center workflow.</h2>
+            <p class="section-copy">Authenticate with a Gmail App Password, scan the latest inbox messages, and flag fake or suspicious content for review or deletion.</p>
+          </div>
+          <div class="hero-metrics">
+            <div class="hero-chip">
+              <span>Scan window</span>
+              <strong>Last 50 inbox emails</strong>
+            </div>
+            <div class="hero-chip">
+              <span>Auth</span>
+              <strong>App password only</strong>
+            </div>
+          </div>
+        </div>
+
+        <div id="gmailLoginCard" class="glass-card auth-card">
+          <div class="card-head">
+            <div>
+              <p class="panel-kicker">Authentication</p>
+              <h3>Connect Gmail safely</h3>
+            </div>
+          </div>
+          <p class="section-copy small-copy">Use a Gmail App Password instead of your main account password. Enable two-factor authentication first, then create the app password from Google's account security settings.</p>
+          <div class="form-grid">
+            <label class="form-field">
+              <span>Gmail Address</span>
+              <input type="email" id="gEmail" placeholder="you@gmail.com">
+            </label>
+            <label class="form-field">
+              <span>App Password</span>
+              <input type="password" id="gPass" placeholder="16-character app password">
+            </label>
+          </div>
+          <div id="gmailLoginAlert" class="alert hidden"></div>
+          <div class="action-row">
+            <button class="btn btn-primary" id="gmailLoginBtn">Connect Gmail</button>
+          </div>
+        </div>
+
+        <div id="gmailDash" class="hidden">
+          <div class="metrics-grid gmail-metrics">
+            <article class="metric-card">
+              <span>Total</span>
+              <strong id="gTotal">0</strong>
+              <small>Messages in inbox</small>
+            </article>
+            <article class="metric-card danger-card">
+              <span>Fake</span>
+              <strong id="gFake">0</strong>
+              <small>Messages marked high-risk</small>
+            </article>
+            <article class="metric-card warn-card">
+              <span>Suspicious</span>
+              <strong id="gSusp">0</strong>
+              <small>Messages needing review</small>
+            </article>
+            <article class="metric-card success-card">
+              <span>Real / Safe</span>
+              <strong id="gReal">0</strong>
+              <small>Messages that look safer</small>
+            </article>
+          </div>
+
+          <article class="glass-card">
+            <div class="card-head split-head">
+              <div>
+                <p class="panel-kicker">Scan Control</p>
+                <h3>Run inbox inspection and manage results</h3>
+              </div>
+              <div class="action-row compact-row">
+                <button class="btn btn-primary" id="gScanBtn">Scan Inbox</button>
+                <button class="btn btn-danger" id="gDelBtn" disabled>Delete Selected Fake</button>
+                <button class="btn btn-secondary" id="gmailDownloadBtn">Download Gmail Dataset</button>
+                <button class="btn btn-ghost" id="gmailDisconnectBtn">Disconnect</button>
+              </div>
+            </div>
+            <div id="gmailProgress" class="progress-panel hidden">
+              <div class="progress-track"><div class="progress-fill warn-fill" id="gProgressBar"></div></div>
+              <div class="progress-meta">
+                <span id="gProgressLbl">Preparing scan...</span>
+              </div>
+            </div>
+            <div id="gmailDashAlert" class="alert hidden"></div>
+          </article>
+
+          <article class="glass-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Scanned Messages</p>
+                <h3>Select only fake messages for deletion</h3>
+              </div>
+            </div>
+            <div id="gmailMsgs" class="message-feed">
+              <div class="activity-empty">Click Scan Inbox to analyze your recent Gmail messages.</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-train" class="tab-section">
+        <div class="section-hero">
+          <div>
+            <p class="eyebrow">Model Maintenance</p>
+            <h2>Retrain the classifier without leaving the command center.</h2>
+            <p class="section-copy">Upload a CSV with message and label columns to rebuild the TF-IDF vectorizer and logistic regression model, then refresh the live metrics.</p>
+          </div>
+          <div class="hero-metrics">
+            <div class="hero-chip">
+              <span>Accepted labels</span>
+              <strong>ham / spam / real / fake</strong>
+            </div>
+            <div class="hero-chip">
+              <span>Hot swap</span>
+              <strong>Model reloads after save</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="workspace-grid">
+          <article class="glass-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Training Input</p>
+                <h3>Upload a CSV dataset</h3>
+              </div>
+            </div>
+            <p class="section-copy small-copy">Required columns: <code>label</code> plus <code>text</code>, <code>message</code>, or <code>v2</code>. Classic spam datasets using <code>v1</code> and <code>v2</code> are supported.</p>
+            <button class="drop-zone" id="trainDropZone" type="button">
+              <span class="drop-title">Choose or drop a CSV file</span>
+              <span class="drop-copy">The retraining pipeline will clean data, rebuild features, and persist the updated model files.</span>
+              <strong id="trainFileName" class="file-name"></strong>
+            </button>
+            <input type="file" id="trainFileInput" accept=".csv" hidden>
+            <div id="trainProgressBlock" class="progress-panel hidden">
+              <div class="progress-track"><div class="progress-fill" id="trainProgressBar"></div></div>
+              <div class="progress-meta">
+                <span id="trainProgressLbl">Preparing training job...</span>
+              </div>
+            </div>
+            <div id="trainAlert" class="alert hidden"></div>
+            <div class="action-row">
+              <button class="btn btn-primary" id="trainBtn" disabled>Start Training</button>
+            </div>
+          </article>
+
+          <article class="glass-card">
+            <div class="card-head">
+              <div>
+                <p class="panel-kicker">Model Snapshot</p>
+                <h3>Current training metadata</h3>
+              </div>
+            </div>
+            <div class="metrics-grid train-metrics">
+              <article class="metric-card success-card">
+                <span>Accuracy</span>
+                <strong id="tAcc">--</strong>
+                <small>Current evaluation score</small>
+              </article>
+              <article class="metric-card">
+                <span>TF-IDF Features</span>
+                <strong id="tFeat">--</strong>
+                <small>Vocabulary size</small>
+              </article>
+              <article class="metric-card warn-card">
+                <span>Training Samples</span>
+                <strong id="tSamp">--</strong>
+                <small>Rows used during training</small>
+              </article>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-howto" class="tab-section">
+        <div class="section-hero">
+          <div>
+            <p class="eyebrow">Operator Guide</p>
+            <h2>How to use each workflow and what to expect from the labels.</h2>
+            <p class="section-copy">This guide keeps the command center approachable for demos, submission reviews, and day-to-day testing.</p>
+          </div>
+        </div>
+
+        <div class="guide-grid">
+          <article class="guide-card">
+            <p class="panel-kicker">01</p>
+            <h3>Analyze text</h3>
+            <p>Paste a message, run analysis, then review label, confidence bars, and keyword signals before taking action.</p>
+          </article>
+          <article class="guide-card">
+            <p class="panel-kicker">02</p>
+            <h3>Inspect screenshots</h3>
+            <p>Upload clear screenshots so OCR extracts better text before the classifier evaluates the content.</p>
+          </article>
+          <article class="guide-card">
+            <p class="panel-kicker">03</p>
+            <h3>Read the dashboard</h3>
+            <p>Use the analytics panel to understand session volume, threat ratio, and confidence trends over time.</p>
+          </article>
+          <article class="guide-card">
+            <p class="panel-kicker">04</p>
+            <h3>Scan Gmail carefully</h3>
+            <p>Authenticate with a Gmail App Password, scan the inbox, and only select fake messages if you are confident they should be deleted.</p>
+          </article>
+          <article class="guide-card">
+            <p class="panel-kicker">05</p>
+            <h3>Retrain with good data</h3>
+            <p>Provide balanced, labeled message data so the model improves rather than overfitting to one label type.</p>
+          </article>
+          <article class="guide-card">
+            <p class="panel-kicker">06</p>
+            <h3>Use human judgment</h3>
+            <p>Suspicious output means review manually. Real output is lower risk, not a guarantee of safety.</p>
+          </article>
+        </div>
+
+        <article class="glass-card">
+          <div class="card-head">
+            <div>
+              <p class="panel-kicker">Label Guide</p>
+              <h3>How the probability thresholds map to labels</h3>
+            </div>
+          </div>
+          <div class="label-grid">
+            <div class="label-card success-card-lite">
+              <strong>Real</strong>
+              <p>Threat score below 85%. The message is labeled Real by the configured risk bands.</p>
+            </div>
+            <div class="label-card warn-card-lite">
+              <strong>Suspicious</strong>
+              <p>Threat score from 85% to below 95%. Pause and review before clicking or replying.</p>
+            </div>
+            <div class="label-card danger-card-lite">
+              <strong>Fake</strong>
+              <p>Threat score from 95% to 100%. Treat links, payment requests, and account warnings as unsafe until verified.</p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js', v='risk-bands-95-20261101') }}"></script>
+</body>
+</html>
+
+
+
+

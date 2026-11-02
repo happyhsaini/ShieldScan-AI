@@ -1,0 +1,24 @@
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local secrets and machine-specific files
+.env
+.env.*
+!.env.example
+.DS_Store
+.vscode/
+
+# Local datasets may contain personal message content
+combined_data.csv
+training_data/
+
+# Optional fine-tuned transformer weights exceed GitHub's regular file limit
+transformer_model/
+
+# Local logs and runtime artifacts
+*.log
+local-preview.*
